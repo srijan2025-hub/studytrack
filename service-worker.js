@@ -1,4 +1,4 @@
-const CACHE_NAME = "routine-cache-v1";
+const CACHE_NAME = "routine-cache-v2";
 const ASSETS = [
   "./",
   "index.html",
@@ -7,6 +7,7 @@ const ASSETS = [
   "notify.js",
   "graph.js",
   "app.js",
+  "confetti.js",
   "manifest.json"
 ];
 
@@ -23,3 +24,4 @@ self.addEventListener("fetch", e => {
     })
   );
 });
+
