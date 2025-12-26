@@ -55,3 +55,15 @@ statsBox.innerHTML = `
     📊 ${percent}% Completed
   </div>
 `;
+// ---- DARK MODE ----
+const themeBtn = document.getElementById("toggleTheme");
+const isDark = localStorage.getItem("dark") === "true";
+
+if (isDark) document.body.classList.add("dark");
+
+themeBtn.onclick = () => {
+  document.body.classList.toggle("dark");
+  localStorage.setItem("dark",
+    document.body.classList.contains("dark")
+  );
+};
