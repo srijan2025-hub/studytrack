@@ -15,12 +15,17 @@
     <button id="toggleTheme">🌙</button>
   </header>
 
-  <div id="stats"></div>
-  <div id="timeline"></div>
+  
+<div id="stats"></div>
 
-  <script src="routine.js"></script>
-  <script src="notify.js"></script>
-  <script src="app.js"></script>
+<canvas id="graph" width="300" height="120"></canvas>
+
+<div id="timeline"></div>
+
+<script src="routine.js"></script>
+<script src="notify.js"></script>
+<script src="graph.js"></script>
+<script src="app.js"></script>
 
   <script>
     if ("serviceWorker" in navigator) {
