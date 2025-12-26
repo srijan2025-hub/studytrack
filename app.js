@@ -6,13 +6,11 @@ const today = new Date();
 const todayKey = today.toISOString().split("T")[0];
 historyInput.value = todayKey;
 
+// Initial Load
 loadDay(todayKey);
 
-// ---------------- LOAD DAY ----------------
 function loadDay(dateKey) {
   timeline.innerHTML = "";
-  statsBox.innerHTML = "";
-
   const isToday = dateKey === todayKey;
   const routine = getRoutineByDate(dateKey);
   const saved = JSON.parse(localStorage.getItem(dateKey)) || {};
@@ -27,21 +25,15 @@ function loadDay(dateKey) {
     const div = document.createElement("div");
     div.className = "task";
 
-    if (saved[item.id] === "done") {
-      div.classList.add("done");
-      done++;
-    }
-    if (saved[item.id] === "missed") {
-      div.classList.add("missed");
-      missed++;
-    }
+    if (saved[item.id] === "done") { div.classList.add("done"); done++; }
+    if (saved[item.id] === "missed") { div.classList.add("missed"); missed++; }
 
     div.innerHTML = `
       <strong>${item.time}</strong> — ${item.task}<br>
-      ${isToday ? `
-        <button class="ok">✔ Done</button>
-        <button class="no">✖ Missed</button>
-      ` : `<em>🔒 Locked</em>`}
+      ${isToday
+        ? `<button class="ok">✔ Done</button>
+           <button class="no">✖ Missed</button>`
+        : `<em>🔒 Locked</em>`}
     `;
 
     if (isToday) {
@@ -54,10 +46,9 @@ function loadDay(dateKey) {
   });
 
   showStats(done, missed, routine.length, isToday);
-  if (typeof drawGraph === "function") drawGraph();
+  drawGraph();
 }
 
-// ---------------- SAVE ----------------
 function save(id, status) {
   const data = JSON.parse(localStorage.getItem(todayKey)) || {};
   data[id] = status;
@@ -65,12 +56,12 @@ function save(id, status) {
   loadDay(todayKey);
 }
 
-// ---------------- STATS + STREAK ----------------
 function showStats(done, missed, total, isToday) {
   const percent = total ? Math.round((done / total) * 100) : 0;
   let streak = parseInt(localStorage.getItem("streak") || "0");
   const streakDate = localStorage.getItem("streakDate");
 
+  // Only increase streak if we hit 80% AND haven't already counted today
   if (isToday && percent >= 80 && streakDate !== todayKey) {
     streak++;
     localStorage.setItem("streak", streak);
@@ -84,10 +75,9 @@ function showStats(done, missed, total, isToday) {
   `;
 }
 
-// ---------------- DATE PICKER ----------------
 historyInput.onchange = () => loadDay(historyInput.value);
 
-// ---------------- DARK MODE ----------------
+// Dark mode logic
 const themeBtn = document.getElementById("toggleTheme");
 if (localStorage.getItem("dark") === "true") {
   document.body.classList.add("dark");
@@ -95,6 +85,7 @@ if (localStorage.getItem("dark") === "true") {
 
 themeBtn.onclick = () => {
   document.body.classList.toggle("dark");
-  localStorage.setItem("dark",
-    document.body.classList.contains("dark"));
+  localStorage.setItem("dark", document.body.classList.contains("dark"));
+  drawGraph(); // Redraw graph to update text color
 };
+
