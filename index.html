@@ -4,13 +4,71 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Routine Tracker</title>
-
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css">
   
-  <script src="confetti.js"></script>
+  <style>
+    /* CSS STYLES */
+    :root {
+      --bg: #f4f6f8; --card: #ffffff; --text: #333333;
+      --primary: #2196f3; --success: #4caf50; --danger: #f44336;
+      --line: #e0e0e0; --shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    body.dark {
+      --bg: #121212; --card: #1e1e1e; --text: #e0e0e0;
+      --primary: #64b5f6; --line: #333; --shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0; padding: 20px; transition: 0.3s;
+      max-width: 600px; margin: 0 auto;
+    }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    header h2 { margin: 0; font-size: 1.5rem; }
+    header small { color: gray; font-size: 0.9rem; }
+    .stats {
+      background: var(--primary); color: white; padding: 15px;
+      border-radius: 12px; margin-bottom: 20px; text-align: center;
+      font-weight: 600; box-shadow: 0 4px 10px rgba(33, 150, 243, 0.3);
+      display: flex; justify-content: space-around;
+    }
+    canvas { background: var(--card); border-radius: 12px; width: 100%; margin-bottom: 20px; box-shadow: var(--shadow); }
+    .timeline-container { position: relative; padding-left: 20px; }
+    .timeline-container::before {
+      content: ''; position: absolute; left: 6px; top: 0; bottom: 0; width: 2px; background: var(--line);
+    }
+    .task {
+      position: relative; background: var(--card); padding: 16px; margin-bottom: 16px;
+      border-radius: 12px; box-shadow: var(--shadow); margin-left: 15px; transition: transform 0.2s;
+    }
+    .task::before {
+      content: ''; position: absolute; left: -21px; top: 20px; width: 12px; height: 12px;
+      background: var(--bg); border: 3px solid var(--line); border-radius: 50%; z-index: 1;
+    }
+    .task.done { border-right: 4px solid var(--success); opacity: 0.8; }
+    .task.done::before { background: var(--success); border-color: var(--success); }
+    .task.missed { border-right: 4px solid var(--danger); opacity: 0.8; }
+    .task.missed::before { background: var(--danger); border-color: var(--danger); }
+    .task h4 { margin: 0 0 5px 0; font-size: 1.1rem; }
+    .task time { display: block; font-size: 0.85rem; color: gray; margin-bottom: 10px; }
+    .task.active { border: 2px solid var(--primary); transform: scale(1.02); }
+    .task.active::before {
+      background: var(--primary); border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2); animation: pulse 2s infinite;
+    }
+    .actions { display: flex; gap: 10px; margin-top: 8px; }
+    button { padding: 8px 16px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; flex: 1; }
+    .btn-done { background: #e8f5e9; color: #2e7d32; }
+    .btn-missed { background: #ffebee; color: #c62828; }
+    #toggleTheme { background: transparent; font-size: 1.2rem; flex: 0; }
+    details.history-toggle { margin-bottom: 20px; color: gray; cursor: pointer; }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.4); }
+      70% { box-shadow: 0 0 0 8px rgba(33, 150, 243, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); }
+    }
+  </style>
 </head>
-
 <body>
 
 <header>
@@ -22,7 +80,6 @@
 </header>
 
 <div id="stats"></div>
-
 <canvas id="graph" width="320" height="120"></canvas>
 
 <details class="history-toggle">
@@ -34,17 +91,186 @@
 
 <div id="timeline" class="timeline-container"></div>
 
-<script src="routine.js"></script>
-<script src="notify.js"></script>
-<script src="graph.js"></script>
-<script src="app.js"></script>
-
 <script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("service-worker.js");
-}
-</script>
+  // --- 1. CONFIGURATION: YOUR ROUTINE ---
+  const ROUTINE = {
+    Monday: [{id:1,time:"06:00",task:"Wake up"}, {id:2,time:"06:30",task:"Study Math"}, {id:3,time:"20:00",task:"Read Book"}],
+    Tuesday: [{id:1,time:"06:00",task:"Morning Jog"}, {id:2,time:"07:00",task:"Physics"}],
+    Wednesday: [{id:1,time:"06:00",task:"History"}, {id:2,time:"08:00",task:"Read News"}],
+    Thursday: [{id:1,time:"06:00",task:"Chemistry"}, {id:2,time:"18:00",task:"Gym"}],
+    Friday: [{id:1,time:"06:00",task:"Review Week"}, {id:2,time:"07:00",task:"Programming"}, {id:3,time:"21:00",task:"Relax"}],
+    Saturday: [{id:1,time:"09:00",task:"Clean Room"}, {id:2,time:"14:00",task:"Grocery Shopping"}],
+    Sunday: [{id:1,time:"10:00",task:"Plan Next Week"}]
+  };
 
+  // --- 2. CONFETTI ENGINE (No external files needed) ---
+  function startConfetti() {
+    const canvas = document.createElement("canvas");
+    canvas.style.position = "fixed"; canvas.style.top = "0"; canvas.style.left = "0";
+    canvas.style.width = "100%"; canvas.style.height = "100%";
+    canvas.style.pointerEvents = "none"; canvas.style.zIndex = "9999";
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const particles = [];
+    const colors = ['#2196f3', '#4caf50', '#f44336', '#ffeb3b', '#9c27b0'];
+    for (let i=0; i<150; i++) {
+      particles.push({
+        x: window.innerWidth/2, y: window.innerHeight/2,
+        w: Math.random()*10+5, h: Math.random()*10+5,
+        dx: (Math.random()-0.5)*20, dy: (Math.random()-0.5)*20,
+        color: colors[Math.floor(Math.random()*colors.length)], gravity: 0.5, life: 100
+      });
+    }
+    function animate() {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      let active = false;
+      particles.forEach(p => {
+        if(p.life>0){ p.x+=p.dx; p.y+=p.dy; p.dy+=p.gravity; p.life--; active=true; ctx.fillStyle=p.color; ctx.fillRect(p.x,p.y,p.w,p.h); }
+      });
+      if(active) requestAnimationFrame(animate); else document.body.removeChild(canvas);
+    }
+    animate();
+  }
+
+  // --- 3. MAIN LOGIC ---
+  const timeline = document.getElementById("timeline");
+  const statsBox = document.getElementById("stats");
+  const historyInput = document.getElementById("historyDate");
+  const dateDisplay = document.getElementById("currentDateDisplay");
+  
+  const today = new Date();
+  const todayKey = today.toISOString().split("T")[0];
+  
+  if(dateDisplay) dateDisplay.innerText = today.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+  historyInput.value = todayKey;
+
+  // Helper: Get routine safely
+  function getRoutineByDate(dateKey) {
+    const d = new Date(dateKey + "T12:00:00");
+    const day = d.toLocaleDateString("en-US", { weekday: "long" });
+    return ROUTINE[day] || [];
+  }
+
+  function loadDay(dateKey) {
+    timeline.innerHTML = "";
+    const isToday = dateKey === todayKey;
+    const routine = getRoutineByDate(dateKey);
+    const saved = JSON.parse(localStorage.getItem(dateKey)) || {};
+    
+    // Sort tasks
+    routine.sort((a, b) => a.time.localeCompare(b.time));
+
+    let done = 0, missed = 0, foundActive = false;
+    document.getElementById("dayTitle").innerText = isToday ? "Today's Plan" : "History";
+
+    if(routine.length === 0) timeline.innerHTML = "<div style='text-align:center;color:gray;padding:20px;'>No tasks for this day.</div>";
+
+    routine.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "task";
+      const status = saved[item.id];
+      if (status === "done") { div.classList.add("done"); done++; }
+      if (status === "missed") { div.classList.add("missed"); missed++; }
+
+      // Active logic
+      if (isToday && !status && !foundActive) {
+        div.classList.add("active");
+        foundActive = true;
+      }
+
+      div.innerHTML = `
+        <time>${formatTime(item.time)}</time>
+        <h4>${item.task}</h4>
+        ${isToday && !status ? `<div class="actions"><button class="btn-done">✔ Done</button><button class="btn-missed">✖ Miss</button></div>` : ``}
+        ${status ? `<em>Status: ${status}</em>` : ''}
+      `;
+
+      if (isToday && !status) {
+        div.querySelector(".btn-done").onclick = () => save(item.id, "done");
+        div.querySelector(".btn-missed").onclick = () => save(item.id, "missed");
+      }
+      timeline.appendChild(div);
+    });
+    showStats(done, missed, routine.length, isToday);
+    drawGraph();
+  }
+
+  function save(id, status) {
+    const data = JSON.parse(localStorage.getItem(todayKey)) || {};
+    data[id] = status;
+    localStorage.setItem(todayKey, JSON.stringify(data));
+    loadDay(todayKey);
+  }
+
+  function showStats(done, missed, total, isToday) {
+    const percent = total ? Math.round((done / total) * 100) : 0;
+    let streak = parseInt(localStorage.getItem("streak") || "0");
+    const streakDate = localStorage.getItem("streakDate");
+
+    if (isToday && percent >= 80 && streakDate !== todayKey) {
+      streak++;
+      localStorage.setItem("streak", streak);
+      localStorage.setItem("streakDate", todayKey);
+    }
+    if (isToday && percent === 100) triggerConfetti();
+
+    statsBox.innerHTML = `<div>✅ ${done}</div><div>📊 ${percent}%</div><div>🔥 ${streak}</div>`;
+  }
+
+  function triggerConfetti() {
+    if (sessionStorage.getItem("celebrated") === "true") return;
+    startConfetti();
+    sessionStorage.setItem("celebrated", "true");
+  }
+
+  function formatTime(t) {
+    const [h, m] = t.split(":");
+    const d = new Date(); d.setHours(h, m);
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+
+  // --- 4. GRAPH LOGIC ---
+  function drawGraph() {
+    const canvas = document.getElementById("graph");
+    const ctx = canvas.getContext("2d");
+    const textColor = getComputedStyle(document.body).getPropertyValue('--text');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(); d.setDate(d.getDate() - (6 - i));
+      const key = d.toISOString().split("T")[0];
+      const data = JSON.parse(localStorage.getItem(key)) || {};
+      const total = getRoutineByDate(key).length || 1;
+      const done = Object.values(data).filter(v => v === "done").length;
+      const percent = Math.round((done / total) * 100);
+      const x = 30 + i * 40;
+      const h = percent; 
+      const y = canvas.height - h - 20;
+      ctx.fillStyle = percent >= 80 ? "#4caf50" : "#999";
+      ctx.fillRect(x, y, 20, h);
+      ctx.fillStyle = textColor; ctx.font = "12px sans-serif";
+      ctx.fillText(d.toDateString().slice(0,3), x, canvas.height - 5);
+    }
+  }
+
+  historyInput.onchange = () => loadDay(historyInput.value);
+
+  const themeBtn = document.getElementById("toggleTheme");
+  if (localStorage.getItem("dark") === "true") document.body.classList.add("dark");
+  themeBtn.onclick = () => {
+    document.body.classList.toggle("dark");
+    localStorage.setItem("dark", document.body.classList.contains("dark"));
+    drawGraph();
+  };
+
+  // Initial Load
+  loadDay(todayKey);
+
+  // Service Worker Registration (Safe Mode)
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js").catch(err => console.log("SW Fail", err));
+  }
+</script>
 </body>
 </html>
 
