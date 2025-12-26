@@ -4,25 +4,35 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Routine Tracker</title>
+
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css">
+  
+  <script src="confetti.js"></script>
 </head>
+
 <body>
 
 <header>
-  <h2 id="dayTitle"></h2>
+  <div>
+    <h2 id="dayTitle">Loading...</h2>
+    <small id="currentDateDisplay"></small>
+  </div>
   <button id="toggleTheme">🌙</button>
 </header>
 
 <div id="stats"></div>
-<canvas id="graph" width="320" height="140"></canvas>
 
-<div class="history">
-  <label>📅 View date:</label>
-  <input type="date" id="historyDate">
-</div>
+<canvas id="graph" width="320" height="120"></canvas>
 
-<div id="timeline"></div>
+<details class="history-toggle">
+  <summary>📅 View History</summary>
+  <div class="history-content">
+    <input type="date" id="historyDate">
+  </div>
+</details>
+
+<div id="timeline" class="timeline-container"></div>
 
 <script src="routine.js"></script>
 <script src="notify.js"></script>
@@ -37,3 +47,4 @@ if ("serviceWorker" in navigator) {
 
 </body>
 </html>
+
