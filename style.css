@@ -51,3 +51,17 @@ button {
   background: var(--card);
   border-radius: 6px;
 }
+.animate {
+  animation: slide 0.4s ease;
+}
+
+@keyframes slide {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
