@@ -31,7 +31,7 @@ header {
   margin: 12px 0;
   border-left: 6px solid #999;
   border-radius: 6px;
-  transition: 0.3s;
+  animation: slide 0.3s ease;
 }
 
 .done { border-left-color: green; }
@@ -46,33 +46,33 @@ button {
 }
 
 .stats {
-  margin: 10px 0;
   padding: 10px;
+  margin: 10px 0;
   background: var(--card);
   border-radius: 6px;
-}
-.animate {
-  animation: slide 0.4s ease;
+  text-align: center;
+  font-weight: bold;
 }
 
-@keyframes slide {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.history {
+  padding: 8px;
+  background: var(--card);
+  border-radius: 6px;
+  margin-bottom: 10px;
 }
 
 canvas {
   background: var(--card);
   border-radius: 6px;
-  margin: 12px 0;
+  margin: 10px 0;
 }
 
-.stats {
-  font-weight: bold;
-  text-align: center;
+em {
+  color: gray;
 }
+
+@keyframes slide {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
