@@ -1,92 +1,100 @@
 const timeline = document.getElementById("timeline");
 const statsBox = document.getElementById("stats");
+const historyInput = document.getElementById("historyDate");
+
 const today = new Date();
-const todayDate = today.toISOString().split("T")[0];
-const routine = getTodayRoutine();
+const todayKey = today.toISOString().split("T")[0];
+historyInput.value = todayKey;
 
-document.getElementById("dayTitle").innerText = today.toDateString();
+loadDay(todayKey);
 
-const saved = JSON.parse(localStorage.getItem(todayDate)) || {};
+// ---------------- LOAD DAY ----------------
+function loadDay(dateKey) {
+  timeline.innerHTML = "";
+  statsBox.innerHTML = "";
 
-let doneCount = 0;
-let missCount = 0;
+  const isToday = dateKey === todayKey;
+  const routine = getRoutineByDate(dateKey);
+  const saved = JSON.parse(localStorage.getItem(dateKey)) || {};
 
-// ---- LOAD TASKS ----
-routine.forEach(item => {
-  const div = document.createElement("div");
-  div.className = "task animate";
+  let done = 0;
+  let missed = 0;
 
-  div.innerHTML = `
-    <strong>${item.time}</strong> — ${item.task}<br>
-    <button>✔ Done</button>
-    <button>✖ Missed</button>
-  `;
+  document.getElementById("dayTitle").innerText =
+    isToday ? "Today" : "History: " + dateKey;
 
-  if (saved[item.id] === "done") {
-    div.classList.add("done");
-    doneCount++;
-  }
-  if (saved[item.id] === "missed") {
-    div.classList.add("missed");
-    missCount++;
-  }
+  routine.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "task";
 
-  div.querySelectorAll("button")[0].onclick = () => update(item.id, "done", div);
-  div.querySelectorAll("button")[1].onclick = () => update(item.id, "missed", div);
+    if (saved[item.id] === "done") {
+      div.classList.add("done");
+      done++;
+    }
+    if (saved[item.id] === "missed") {
+      div.classList.add("missed");
+      missed++;
+    }
 
-  timeline.appendChild(div);
-  scheduleNotification(item.time, item.task);
-});
+    div.innerHTML = `
+      <strong>${item.time}</strong> — ${item.task}<br>
+      ${isToday ? `
+        <button class="ok">✔ Done</button>
+        <button class="no">✖ Missed</button>
+      ` : `<em>🔒 Locked</em>`}
+    `;
 
-function update(id, status, el) {
-  saved[id] = status;
-  localStorage.setItem(todayDate, JSON.stringify(saved));
-  el.className = "task animate " + status;
-  location.reload();
+    if (isToday) {
+      div.querySelector(".ok").onclick = () => save(item.id, "done");
+      div.querySelector(".no").onclick = () => save(item.id, "missed");
+      scheduleNotification(item.time, item.task);
+    }
+
+    timeline.appendChild(div);
+  });
+
+  showStats(done, missed, routine.length, isToday);
+  if (typeof drawGraph === "function") drawGraph();
 }
 
-// ---- DAILY STATS ----
-const total = routine.length;
-const percent = total ? Math.round((doneCount / total) * 100) : 0;
-
-// ---- STREAK SYSTEM ----
-let streak = parseInt(localStorage.getItem("streak") || "0");
-
-function yesterdayDate() {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().split("T")[0];
+// ---------------- SAVE ----------------
+function save(id, status) {
+  const data = JSON.parse(localStorage.getItem(todayKey)) || {};
+  data[id] = status;
+  localStorage.setItem(todayKey, JSON.stringify(data));
+  loadDay(todayKey);
 }
 
-const yesterday = JSON.parse(localStorage.getItem(yesterdayDate()));
+// ---------------- STATS + STREAK ----------------
+function showStats(done, missed, total, isToday) {
+  const percent = total ? Math.round((done / total) * 100) : 0;
+  let streak = parseInt(localStorage.getItem("streak") || "0");
+  const streakDate = localStorage.getItem("streakDate");
 
-if (percent >= 80) {
-  if (yesterday) {
+  if (isToday && percent >= 80 && streakDate !== todayKey) {
     streak++;
-  } else {
-    streak = 1;
+    localStorage.setItem("streak", streak);
+    localStorage.setItem("streakDate", todayKey);
   }
-  localStorage.setItem("streak", streak);
+
+  statsBox.innerHTML = `
+    <div class="stats">
+      ✅ ${done} | ❌ ${missed} | 📊 ${percent}% | 🔥 ${streak}
+    </div>
+  `;
 }
 
-statsBox.innerHTML = `
-  <div class="stats">
-    ✅ Done: ${doneCount} |
-    ❌ Missed: ${missCount} |
-    📊 ${percent}% |
-    🔥 Streak: ${streak}
-  </div>
-`;
+// ---------------- DATE PICKER ----------------
+historyInput.onchange = () => loadDay(historyInput.value);
 
-// ---- DARK MODE ----
+// ---------------- DARK MODE ----------------
 const themeBtn = document.getElementById("toggleTheme");
-const isDark = localStorage.getItem("dark") === "true";
-if (isDark) document.body.classList.add("dark");
+if (localStorage.getItem("dark") === "true") {
+  document.body.classList.add("dark");
+}
 
 themeBtn.onclick = () => {
   document.body.classList.toggle("dark");
-  localStorage.setItem("dark", document.body.classList.contains("dark"));
+  localStorage.setItem("dark",
+    document.body.classList.contains("dark"));
 };
-
-// ---- DRAW DAILY GRAPH ----
-drawGraph();
