@@ -1,7 +1,7 @@
 const ROUTINE = {
   Monday: [
     { id: 1, time: "06:35", task: "Wake up" },
-    { id: 2, time: "07:00-09:00", task: "Study Math" },
+    { id: 2, time: "09:00", task: "Study Math" },
     { id: 3, time: "20:00", task: "Read Book" }
   ],
   Tuesday: [
