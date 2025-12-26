@@ -1,91 +1,57 @@
-const timeline = document.getElementById("timeline");
-const statsBox = document.getElementById("stats");
-const historyInput = document.getElementById("historyDate");
+const colors = ['#2196f3', '#4caf50', '#f44336', '#ffeb3b', '#9c27b0'];
 
-const today = new Date();
-const todayKey = today.toISOString().split("T")[0];
-historyInput.value = todayKey;
+function startConfetti() {
+  const canvas = document.createElement("canvas");
+  canvas.style.position = "fixed";
+  canvas.style.top = "0";
+  canvas.style.left = "0";
+  canvas.style.width = "100%";
+  canvas.style.height = "100%";
+  canvas.style.pointerEvents = "none";
+  canvas.style.zIndex = "9999";
+  document.body.appendChild(canvas);
 
-// Initial Load
-loadDay(todayKey);
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 
-function loadDay(dateKey) {
-  timeline.innerHTML = "";
-  const isToday = dateKey === todayKey;
-  const routine = getRoutineByDate(dateKey);
-  const saved = JSON.parse(localStorage.getItem(dateKey)) || {};
-
-  let done = 0;
-  let missed = 0;
-
-  document.getElementById("dayTitle").innerText =
-    isToday ? "Today" : "History: " + dateKey;
-
-  routine.forEach(item => {
-    const div = document.createElement("div");
-    div.className = "task";
-
-    if (saved[item.id] === "done") { div.classList.add("done"); done++; }
-    if (saved[item.id] === "missed") { div.classList.add("missed"); missed++; }
-
-    div.innerHTML = `
-      <strong>${item.time}</strong> — ${item.task}<br>
-      ${isToday
-        ? `<button class="ok">✔ Done</button>
-           <button class="no">✖ Missed</button>`
-        : `<em>🔒 Locked</em>`}
-    `;
-
-    if (isToday) {
-      div.querySelector(".ok").onclick = () => save(item.id, "done");
-      div.querySelector(".no").onclick = () => save(item.id, "missed");
-      scheduleNotification(item.time, item.task);
-    }
-
-    timeline.appendChild(div);
-  });
-
-  showStats(done, missed, routine.length, isToday);
-  drawGraph();
-}
-
-function save(id, status) {
-  const data = JSON.parse(localStorage.getItem(todayKey)) || {};
-  data[id] = status;
-  localStorage.setItem(todayKey, JSON.stringify(data));
-  loadDay(todayKey);
-}
-
-function showStats(done, missed, total, isToday) {
-  const percent = total ? Math.round((done / total) * 100) : 0;
-  let streak = parseInt(localStorage.getItem("streak") || "0");
-  const streakDate = localStorage.getItem("streakDate");
-
-  // Only increase streak if we hit 80% AND haven't already counted today
-  if (isToday && percent >= 80 && streakDate !== todayKey) {
-    streak++;
-    localStorage.setItem("streak", streak);
-    localStorage.setItem("streakDate", todayKey);
+  const particles = [];
+  for (let i = 0; i < 150; i++) {
+    particles.push({
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2,
+      w: Math.random() * 10 + 5,
+      h: Math.random() * 10 + 5,
+      dx: (Math.random() - 0.5) * 20,
+      dy: (Math.random() - 0.5) * 20,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      gravity: 0.5,
+      life: 100
+    });
   }
 
-  statsBox.innerHTML = `
-    <div class="stats">
-      ✅ ${done} | ❌ ${missed} | 📊 ${percent}% | 🔥 ${streak}
-    </div>
-  `;
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let active = false;
+
+    particles.forEach(p => {
+      if (p.life > 0) {
+        p.x += p.dx;
+        p.y += p.dy;
+        p.dy += p.gravity;
+        p.life--;
+        active = true;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+      }
+    });
+
+    if (active) {
+      requestAnimationFrame(animate);
+    } else {
+      document.body.removeChild(canvas);
+    }
+  }
+  animate();
 }
-
-historyInput.onchange = () => loadDay(historyInput.value);
-
-// Dark mode logic
-const themeBtn = document.getElementById("toggleTheme");
-if (localStorage.getItem("dark") === "true") {
-  document.body.classList.add("dark");
-}
-
-themeBtn.onclick = () => {
-  document.body.classList.toggle("dark");
-  localStorage.setItem("dark", document.body.classList.contains("dark"));
-  drawGraph(); // Redraw graph to update text color
-};
 
