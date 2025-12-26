@@ -65,3 +65,14 @@ button {
     transform: translateY(0);
   }
 }
+
+canvas {
+  background: var(--card);
+  border-radius: 6px;
+  margin: 12px 0;
+}
+
+.stats {
+  font-weight: bold;
+  text-align: center;
+}
