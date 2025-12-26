@@ -10,27 +10,20 @@ function drawGraph() {
     d.setDate(d.getDate() - (6 - i));
     const key = d.toISOString().split("T")[0];
     
-    // Get saved data
     const data = JSON.parse(localStorage.getItem(key)) || {};
-    
-    // Get total possible tasks for that specific day
     const routineForDay = getRoutineByDate(key);
     const total = routineForDay.length || 1; 
 
-    // Calculate score
     const done = Object.values(data).filter(v => v === "done").length;
     const percent = Math.round((done / total) * 100);
 
-    // Draw Bar
     const x = 30 + i * 40;
-    const barHeight = percent; // Scale this if you want taller bars
+    const barHeight = percent; 
     const y = canvas.height - barHeight - 20;
 
-    // Green if >= 80%, Gray otherwise
     ctx.fillStyle = percent >= 80 ? "#4caf50" : "#999";
     ctx.fillRect(x, y, 20, barHeight);
 
-    // Draw Date Text
     ctx.fillStyle = textColor;
     ctx.font = "12px sans-serif";
     ctx.fillText(d.toDateString().slice(0,3), x, canvas.height - 5);
