@@ -1,32 +1,39 @@
 function drawGraph() {
   const canvas = document.getElementById("graph");
   const ctx = canvas.getContext("2d");
+  const textColor = getComputedStyle(document.body).getPropertyValue('--text');
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  const days = [];
-  const values = [];
-
-  for (let i = 6; i >= 0; i--) {
+  for (let i = 0; i < 7; i++) {
     const d = new Date();
-    d.setDate(d.getDate() - i);
+    d.setDate(d.getDate() - (6 - i));
     const key = d.toISOString().split("T")[0];
+    
+    // Get saved data
     const data = JSON.parse(localStorage.getItem(key)) || {};
+    
+    // Get total possible tasks for that specific day
+    const routineForDay = getRoutineByDate(key);
+    const total = routineForDay.length || 1; 
+
+    // Calculate score
     const done = Object.values(data).filter(v => v === "done").length;
-    const total = Object.keys(data).length || 1;
+    const percent = Math.round((done / total) * 100);
 
-    days.push(d.toDateString().slice(0, 3));
-    values.push(Math.round((done / total) * 100));
+    // Draw Bar
+    const x = 30 + i * 40;
+    const barHeight = percent; // Scale this if you want taller bars
+    const y = canvas.height - barHeight - 20;
+
+    // Green if >= 80%, Gray otherwise
+    ctx.fillStyle = percent >= 80 ? "#4caf50" : "#999";
+    ctx.fillRect(x, y, 20, barHeight);
+
+    // Draw Date Text
+    ctx.fillStyle = textColor;
+    ctx.font = "12px sans-serif";
+    ctx.fillText(d.toDateString().slice(0,3), x, canvas.height - 5);
   }
-
-  const barWidth = 30;
-  const gap = 15;
-
-  values.forEach((val, i) => {
-    const x = i * (barWidth + gap) + 20;
-    const y = canvas.height - val;
-
-    ctx.fillRect(x, y, barWidth, val);
-    ctx.fillText(days[i], x, canvas.height - 5);
-  });
 }
+
